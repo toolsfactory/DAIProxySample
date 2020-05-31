@@ -50,7 +50,10 @@ namespace DAIProxy.Sample
             Console.WriteLine($"encrypted string = {encryptedString}");
             var decryptedString = AesOperation.DecryptString(key, encryptedString);
             Console.WriteLine($"decrypted string = {decryptedString}");
-            var result = new DataParser(decryptedString);
+//            var sampleString = Convert.ToBase64String(new byte[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39 });
+//            var decryptedSample = AesOperation.DecryptString(key, sampleString);
+//            Console.WriteLine($"decrypted sample = {decryptedSample}");
+            var result = new ProxyRequestData(decryptedString);
             Console.WriteLine($"ValidUntil: {result.ValidUntil}");
             Console.WriteLine($"Url: {result.Url}");
             Console.WriteLine($"IP: {result.IP}");
