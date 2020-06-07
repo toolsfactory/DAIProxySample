@@ -10,6 +10,10 @@ namespace DAIProxy.Core
         public static string DecodeAndDecrypt(string rawData, string key)
         {
             byte[] decoded;
+            if (String.IsNullOrEmpty(rawData))
+                return "";
+            if (String.IsNullOrEmpty(key) || key.Length != 16)
+                throw new DecryptionException("KEy invalid");
 
             try
             {
@@ -26,35 +30,33 @@ namespace DAIProxy.Core
             }
             catch (Exception ex)
             {
-                throw new DecryptionException("Encrypting the data failed", ex);
+                throw new DecryptionException("Decrypting the data failed", ex);
             }
 
-        }
-
-        private static byte[] Base62Decode(string text)
-        {
-            return text.FromBase62();
-        }
-
-        private static string Decrypt(byte[] data, string key)
-        {
-            var iv = new byte[16];
-
-            using (var aes = Aes.Create())
+            static byte[] Base62Decode(string text)
             {
-                aes.Key = Encoding.UTF8.GetBytes(key);
-                aes.IV = iv;
-                var result = string.Empty;
-                using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-                using (var ms = new MemoryStream(data))
+                return text.FromBase62();
+            }
+
+            static string Decrypt(byte[] data, string key)
+            {
+                var iv = new byte[16]; // 16 byte empty IV (all zero)
+
+                using (var aes = Aes.Create())
                 {
-                    using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-                    using var sr = new StreamReader(cs);
-                    result = sr.ReadToEnd();
+                    aes.Key = Encoding.UTF8.GetBytes(key);
+                    aes.IV = iv;
+                    var result = string.Empty;
+                    using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+                    using (var ms = new MemoryStream(data))
+                    {
+                        using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+                        using var sr = new StreamReader(cs);
+                        result = sr.ReadToEnd();
+                    }
+                    return result;
                 }
-                return result;
             }
         }
-
     }
 }

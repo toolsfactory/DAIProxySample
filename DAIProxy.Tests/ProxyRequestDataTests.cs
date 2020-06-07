@@ -5,10 +5,11 @@ namespace DAIProxy.Core.Tests
     [TestFixture()]
     public class ProxyRequestDataTests
     {
+        
         [Test]
         public void TestNullInput()
         {
-            Assert.Throws<ParsingException>(() => new ProxyRequestData(null));
+            Assert.Throws<ParsingException>(() => ProxyRequestDataDecoder.CreateFrom(null));
         }
 
         [TestCase("")]
@@ -16,7 +17,7 @@ namespace DAIProxy.Core.Tests
         [TestCase("1341234;4576457")]
         public void TestInputWithInvalidChunkCount(string arg)
         {
-            Assert.Throws<ParsingException>(() => new ProxyRequestData(arg));
+            Assert.Throws<ParsingException>(() => ProxyRequestDataDecoder.CreateFrom(arg));
         }
 
         [TestCase("2020-05-31T15:52:15.Z")]
@@ -25,7 +26,7 @@ namespace DAIProxy.Core.Tests
         [TestCase("2020\05-31T15:52:15.10Z")]
         public void TestInputWithInvalidTimestamp(string arg)
         {
-            Assert.Throws<ParsingException>(() => new ProxyRequestData(arg+ ";http%3a%2f%2fwww.heise.de%2fq%3fd%3dhello+world;192.168.2.1"));
+            Assert.Throws<ParsingException>(() => ProxyRequestDataDecoder.CreateFrom(arg+ ";http%3a%2f%2fwww.heise.de%2fq%3fd%3dhello+world;192.168.2.1"));
         }
 
         [TestCase("http%2f%2fwww.heise.de%2fq%3fd%3dhello+world")]
@@ -36,7 +37,7 @@ namespace DAIProxy.Core.Tests
         [TestCase("http%3a%2f%2fwww.heise.de%2fq%3fd%3dhello world")]
         public void TestInputWithInvalidUrl(string arg)
         {
-            Assert.Throws<ParsingException>(() => new ProxyRequestData("2020-05-31T15:52:15.100Z;" + arg + ";192.168.2.1"));
+            Assert.Throws<ParsingException>(() => ProxyRequestDataDecoder.CreateFrom("2020-05-31T15:52:15.100Z;" + arg + ";192.168.2.1"));
         }
 
         [TestCase("hello")]
@@ -47,7 +48,7 @@ namespace DAIProxy.Core.Tests
         [TestCase("300.168.2.1")]
         public void TestInputWithInvalidIp(string arg)
         {
-            Assert.Throws<ParsingException>(() => new ProxyRequestData("2020-05-31T15:52:15.100Z;http%3a%2f%2fwww.heise.de%2fq%3fd%3dhello+world;" + arg));
+            Assert.Throws<ParsingException>(() => ProxyRequestDataDecoder.CreateFrom("2020-05-31T15:52:15.100Z;http%3a%2f%2fwww.heise.de%2fq%3fd%3dhello+world;" + arg));
         }
 
         [TestCase("http:%2f%2fwww.heise.de%2fq%3fd%3dhello+world" , "http://www.heise.de/q?d=hello world")]
@@ -58,7 +59,7 @@ namespace DAIProxy.Core.Tests
         [TestCase("http%3a%2f%2fwww.heise.de%2fq%3fd%3dhello world", "http://www.heise.de/q?d=hello world")]
         public void TestInputWithCorrectUrl(string arg, string expected)
         {
-            var result = new ProxyRequestData("2020-05-31T15:52:15.100Z;" + arg + ";192.168.2.1");
+            var result = ProxyRequestDataDecoder.CreateFrom("2020-05-31T15:52:15.100Z;" + arg + ";192.168.2.1");
             Assert.AreEqual(expected, result.Url);
         }
 

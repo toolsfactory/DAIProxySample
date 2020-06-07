@@ -4,12 +4,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DAIProxy.Lambda", "DAIProxy.Lambda\DAIProxy.Lambda.csproj", "{4D5259D7-3C54-4087-8598-4F43C6FBEE07}"
+	ProjectSection(ProjectDependencies) = postProject
+		{07059B2B-0E91-4AA8-B8C2-9986505D3311} = {07059B2B-0E91-4AA8-B8C2-9986505D3311}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DAIProxy.Tests", "DAIProxy.Tests\DAIProxy.Tests.csproj", "{5E957FC4-AFD7-415B-8A4A-7DA9CAFE51EE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DAIProxy.Sample", "DAIProxy.Sample\DAIProxy.Sample.csproj", "{0F10A043-A3D9-48F3-A872-A6C357B3BF44}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAIProxy.Core", "DAIProxy.Core\DAIProxy.Core.csproj", "{07059B2B-0E91-4AA8-B8C2-9986505D3311}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DAIProxy.Core", "DAIProxy.Core\DAIProxy.Core.csproj", "{07059B2B-0E91-4AA8-B8C2-9986505D3311}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
