@@ -97,8 +97,9 @@ namespace DAIProxy.Sample
             _tokenData = new ProxyRequestData() { ValidUntil = DateTime.Now.AddSeconds(validseconds), Url = targeturl, IP = IPAddress.Parse(sourceIP), Debug = debug, Salted = salted };
             _token = ProxyRequestDataEncoder.EncodeAndEncrypt(_tokenData, _key);
 
-            if (_tokenData != null)
-                DisplayToken();
+            Console.WriteLine();
+            Console.WriteLine();
+            DisplayToken();
 
             ContinueWithEnter();
         }
@@ -160,7 +161,7 @@ namespace DAIProxy.Sample
         {
             DisplayHeader();
             DisplaySubheader("Generate Key");
-            _key = RandomString(16, true);
+            _key = RandomString(32, true);
             Console.WriteLine($"New Key:     {_key}");
             Console.WriteLine();
             ContinueWithEnter();
@@ -173,15 +174,15 @@ namespace DAIProxy.Sample
             {
                 DisplayHeader();
                 DisplaySubheader("Generate Key");
-                var key = EasyConsole.Input.ReadString("New key (16 characters): ");
-                keyok = key.Length == 16;
+                var key = EasyConsole.Input.ReadString("New key (32 characters): ");
+                keyok = key.Length == 32;
                 _key = keyok ? key : _key;
                 if (key.Length == 0)
                 {
                     Console.WriteLine("Key not changed");
                     break;
                 }
-                if (key.Length != 16)
+                if (key.Length != 32)
                 {
                     Console.WriteLine("invalid key length. 16 characters required (128 bit aes key)");
                     ContinueWithEnter();

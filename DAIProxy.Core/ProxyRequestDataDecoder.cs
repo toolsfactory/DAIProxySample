@@ -26,13 +26,13 @@ namespace DAIProxy.Core
             if (String.IsNullOrWhiteSpace(data))
                 throw new ParsingException("No data provided");
             var result = SplitString(data);
-            var start = result.salt ? 1 : 0;
+            var start = 1;
             var validuntil = ParseTime(result.parts[start]);
             var url = ParseUrl(result.parts[start + 1]);
             var ip = ParseIP(result.parts[start + 2]);
             var debug = (result.parts.Count() >= start + 3) ? CheckDebug(result.parts[start + 3]) : false;
 
-            return new ProxyRequestData() { ValidUntil = validuntil, IP = ip, Url = url , Salted = result.salt, Debug = debug};
+            return new ProxyRequestData() { ValidUntil = validuntil, IP = ip, Url = url , Salted = true, Debug = debug};
         }
 
         private static bool CheckDebug(string v)
@@ -50,20 +50,19 @@ namespace DAIProxy.Core
         private static DateTime ParseTime(string data)
         {
             var ok = DateTime.TryParse(data, out var time);
-            return  (ok) ? time : throw new ParsingException("Part 1 could not be parsed");
+            return  (ok) ? time : throw new ParsingException($"Part 1 could not be parsed: {data}");
         }
 
         private static string ParseUrl(string data)
         {
             var url = System.Web.HttpUtility.UrlDecode(data);
-            return (CheckUrl(url)) ? url : throw new ParsingException("Part 2 could not be parsed");
-
+            return (CheckUrl(url)) ? url : throw new ParsingException($"Part 2 could not be parsed: {url}");
         }
 
         private static IPAddress ParseIP(string data)
         {
             var ok = IPAddress.TryParse(data, out var ip);
-            return  (ok) ? ip : throw new ParsingException("Part 3 could not be parsed");
+            return  (ok) ? ip : throw new ParsingException($"Part 3 could not be parsed: {data}");
         }
 
         private static bool CheckUrl(string url)

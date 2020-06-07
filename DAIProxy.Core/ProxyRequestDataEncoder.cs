@@ -9,38 +9,34 @@ namespace DAIProxy.Core
     {
         public static string EncodeAndEncrypt(ProxyRequestData data, string key)
         {
-            return EncodeAndEncrypt(data.ValidUntil, data.Url, data.IP, key, data.Salted, data.Debug);
+            return EncodeAndEncrypt(data.ValidUntil, data.Url, data.IP, key, data.Debug);
         }
 
-        public static string EncodeAndEncrypt(DateTime time, string url, IPAddress ip, string key, bool salted = false,  bool debug = false)
+        public static string EncodeAndEncrypt(DateTime time, string url, IPAddress ip, string key,  bool debug = false)
         {
-            var data = CreateParamterString(time, url, ip, salted, debug);
+            var data = CreateParamterString(time, url, ip, debug);
             return DataEncoder.EncryptAndEncode(data, key);
         }
 
-        private static string CreateParamterString(DateTime time, string url, IPAddress ip, bool salted, bool debug)
+        private static string CreateParamterString(DateTime time, string url, IPAddress ip, bool debug)
         {
             var builder = new StringBuilder();
-            if (salted)
-            {
-                builder.Append(RandomString(16, true));
-                builder.Append(";");
-            }
+            // Salt
+            builder.Append(RandomString(16, true));
+            builder.Append(";");
+            // Validity
             builder.Append(time.ToUniversalTime().ToString("O"));
             builder.Append(";");
+            // URL
             builder.Append(System.Web.HttpUtility.UrlEncode(url));
             builder.Append(";");
+            // IP
             builder.Append(ip.ToString());
+            // Debug
             if (debug)
             {
+                builder.Append(";");
                 builder.Append("debug");
-            }
-            if (salted)
-            {
-                builder.Append(";");
-                builder.Append(RandomString(16, true));
-                builder.Append(";");
-                builder.Append(RandomString(16, true));
             }
             return builder.ToString();
         }

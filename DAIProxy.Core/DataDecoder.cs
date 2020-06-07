@@ -12,7 +12,7 @@ namespace DAIProxy.Core
             byte[] decoded;
             if (String.IsNullOrEmpty(rawData))
                 return "";
-            if (String.IsNullOrEmpty(key) || key.Length != 16)
+            if (String.IsNullOrEmpty(key) || key.Length != 32)
                 throw new DecryptionException("Key invalid");
 
             try

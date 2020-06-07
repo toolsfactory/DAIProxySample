@@ -33,25 +33,31 @@ namespace DAIProxy
             try
             {
                 var prd = ProxyRequestDataDecoder.CreateFromEncodedAndEncrypted(data, key);
-                if(prd.ValidUntil < DateTime.Now)
+                var body = $"ValidUntil: {prd.ValidUntil:O}  -  SourceIP: {prd.IP}  -  Url: {prd.Url}";
+                if (prd.ValidUntil < DateTime.Now)
                 {
+                    LambdaLogger.Log($"Token outdated : {body}");
                     return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = "Token not valid anymore." };
                 }
 
                 if (!prd.Debug)
                 {
                     var cli = new HttpClient();
-                    await cli.SendAsync(CreateRequest(prd));
+                    LambdaLogger.Log($"Triggering Request: {body}");
+                    var result = await cli.SendAsync(CreateRequest(prd));
+                    LambdaLogger.Log($"Request result: {result.StatusCode}");
                     return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 200, Body = "MyFunc" };
                 }
                 else
                 {
-                    var body = $"ValidUntil: {prd.ValidUntil:O}  -  SourceIP: {prd.IP}  -  Url: {prd.Url}";
+                    LambdaLogger.Log($"Debug Request: {body}");
                     return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 200, Body = body };
                 }
             }
             catch (Exception ex)
             {
+                LambdaLogger.Log($"Exception while processing: {ex.Message}");
+                LambdaLogger.Log(ex.StackTrace);
                 return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = ex.Message };
             }
 
