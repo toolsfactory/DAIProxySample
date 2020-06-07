@@ -30,7 +30,7 @@ namespace DAIProxy.Core
             var validuntil = ParseTime(result.parts[start]);
             var url = ParseUrl(result.parts[start + 1]);
             var ip = ParseIP(result.parts[start + 2]);
-            var debug = (result.parts.Count() >= start + 3) ? CheckDebug(result.parts[start + 3]) : false;
+            var debug = (result.parts.Count() == 5) ? CheckDebug(result.parts[start + 3]) : false;
 
             return new ProxyRequestData() { ValidUntil = validuntil, IP = ip, Url = url , Salted = true, Debug = debug};
         }
