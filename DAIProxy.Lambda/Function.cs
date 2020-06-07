@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 using DAIProxy.Core;
+using System.Net.Http;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -20,7 +21,7 @@ namespace DAIProxy
         /// <param name="gwEvent">Data passed from the APIGateway to the handler. The Handler only checks for one QueryParameter withe the name "d" and then tries to decode its value.</param>
         /// <returns>The response that will beconverted to a HTTP response by the API Gateway</returns>
         /// <example>Parameter d structure: content of the parameter is aes encrypted and base62 encoded. Format: "[optional salt];[validuntil ISO 8601];[target url urlencoded];[target ip];[salt]*"</example>
-        public APIGatewayHttpApiV2ProxyResponse Handler(APIGatewayHttpApiV2ProxyRequest gwEvent)
+        public async Task<APIGatewayHttpApiV2ProxyResponse> Handler(APIGatewayHttpApiV2ProxyRequest gwEvent)
         {
             var key = Environment.GetEnvironmentVariable("ENCRYPTION_KEY");
             var dataok = gwEvent.QueryStringParameters.TryGetValue("d", out var data);
@@ -29,32 +30,39 @@ namespace DAIProxy
                 return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = "Missing Data" };
             }
 
-            var decodeddataok = TryDecodeBase62String(data, out var decodeddata);
-            if (!decodeddataok)
+            try
             {
-                return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = "Decoding failed" };
+                var prd = ProxyRequestDataDecoder.CreateFromEncodedAndEncrypted(data, key);
+                if(prd.ValidUntil < DateTime.Now)
+                {
+                    return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = "Token not valid anymore." };
+                }
+
+                if (!prd.Debug)
+                {
+                    var cli = new HttpClient();
+                    await cli.SendAsync(CreateRequest(prd));
+                    return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 200, Body = "MyFunc" };
+                }
+                else
+                {
+                    var body = $"ValidUntil: {prd.ValidUntil:O}  -  SourceIP: {prd.IP}  -  Url: {prd.Url}";
+                    return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 200, Body = body };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = ex.Message };
             }
 
-            var decrypteddataok = TryDecryptData(decodeddata, key);
-            if (!decrypteddataok)
-            {
-                return new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 400, Body = "Decrypting failed" };
-            }
-
-            var response = new APIGatewayHttpApiV2ProxyResponse() { StatusCode = 200, Body="MyFunc" };
-            return response;
         }
 
-
-        private bool TryDecodeBase62String(string data, out byte[] decodeddata)
+        private HttpRequestMessage CreateRequest(ProxyRequestData data)
         {
-            decodeddata = data.FromBase62();
-            return true;
+            var req = new HttpRequestMessage(HttpMethod.Get, data.Url);
+            req.Headers.Add("X-Forwarded-For", data.IP.ToString());
+            return req;
         }
 
-        private bool TryDecryptData(byte[] data, string key)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
