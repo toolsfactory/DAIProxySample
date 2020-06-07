@@ -30,8 +30,14 @@ namespace DAIProxy.Core
             var validuntil = ParseTime(result.parts[start]);
             var url = ParseUrl(result.parts[start + 1]);
             var ip = ParseIP(result.parts[start + 2]);
+            var debug = (result.parts.Count() >= start + 3) ? CheckDebug(result.parts[start + 3]) : false;
 
-            return new ProxyRequestData() { ValidUntil = validuntil, IP = ip, Url = url , Salted = result.salt};
+            return new ProxyRequestData() { ValidUntil = validuntil, IP = ip, Url = url , Salted = result.salt, Debug = debug};
+        }
+
+        private static bool CheckDebug(string v)
+        {
+            return String.Equals(v, "debug", StringComparison.OrdinalIgnoreCase);
         }
 
         private static (string[] parts, bool salt) SplitString(string data)
@@ -72,7 +78,5 @@ namespace DAIProxy.Core
                 return false;
             }
         }
-
-
     }
 }

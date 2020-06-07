@@ -13,5 +13,7 @@ namespace DAIProxy.Core
         public string Url { get; set; }
         public IPAddress IP { get; set; }
         public bool Salted { get; set; }
+
+        public bool Debug { get; set; }
     }
 }

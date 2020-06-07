@@ -13,7 +13,7 @@ namespace DAIProxy.Core
             if (String.IsNullOrEmpty(rawData))
                 return "";
             if (String.IsNullOrEmpty(key) || key.Length != 16)
-                throw new DecryptionException("KEy invalid");
+                throw new DecryptionException("Key invalid");
 
             try
             {
@@ -40,12 +40,10 @@ namespace DAIProxy.Core
 
             static string Decrypt(byte[] data, string key)
             {
-                var iv = new byte[16]; // 16 byte empty IV (all zero)
-
                 using (var aes = Aes.Create())
                 {
                     aes.Key = Encoding.UTF8.GetBytes(key);
-                    aes.IV = iv;
+                    aes.IV = new byte[16]; // 16 byte empty IV (all zero)
                     var result = string.Empty;
                     using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
                     using (var ms = new MemoryStream(data))

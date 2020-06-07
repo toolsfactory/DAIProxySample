@@ -6,23 +6,15 @@ using System.Globalization;
 
 namespace DAIProxy.Core
 {
-    public class DataEncoder
+    public static class DataEncoder
     {
-        private string _rawData;
-        private string _key;
 
-        public DataEncoder(string rawData, string key)
-        {
-            _rawData = rawData;
-            _key = key;
-        }
-
-        public string EncryptAndEncode()
+        public static string EncryptAndEncode(string rawData, string key)
         {
             byte[] encrypted;
             try
             {
-                encrypted = Encrypt(_rawData);
+                encrypted = Encrypt(rawData, key);
             }
             catch (Exception ex)
             {
@@ -39,13 +31,12 @@ namespace DAIProxy.Core
             }
         }
 
-        private byte[] Encrypt(string text)
+        private static byte[] Encrypt(string text, string key)
         {
-            var key = Encoding.UTF8.GetBytes(_key);
-            byte[] iv = new byte[16];
-
             using var aes = Aes.Create();
-            using var encryptor = aes.CreateEncryptor(key, iv);
+            aes.Key = Encoding.UTF8.GetBytes(key);
+            aes.IV = new byte[16]; // 16 byte empty IV (all zero)
+            using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
             using var ms = new MemoryStream();
             using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
             {
@@ -55,7 +46,7 @@ namespace DAIProxy.Core
             return ms.ToArray();
         }
 
-        private string Base62Encode(byte[] data)
+        private static string Base62Encode(byte[] data)
         {
             return data.ToBase62();
         }

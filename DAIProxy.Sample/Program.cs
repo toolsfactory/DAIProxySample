@@ -2,143 +2,207 @@
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
+using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using DAIProxy.Core;
+using EasyConsole;
 
 namespace DAIProxy.Sample
 {
     class Program
     {
+        private static ProxyRequestData _tokenData = null;
+        private static string _token;
+        private static string _key = "b14ca5898a4e4133bbce2ea2315a1916";
+        private static Menu _mainMenu;
         static void Main(string[] args)
         {
+            if (args.Length < 2)
+            {
+                Console.WriteLine("Please provide the encryption key as command line parameter.");
+                Console.WriteLine("For the moment the default key is used.");
+            }
+            else
+            {
+                _key = args[1];
+            }
+            CreateMenu();
             ShowMenu();
         }
 
-        private static void ShowMenu()
+        private static void DisplayHeader()
         {
-            bool exit = false;
-            var menu = new EasyConsole.Menu()
-                .Add("Generate & Save RSA Key", () => GenerateKey())
-                .Add("Load RSA Key", () => LoadKey())
-                .Add("Run signing sample", () => RunSigningSample())
-                .Add("Exit", () => exit = true);
+            Console.Clear();
+            Console.WriteLine("DAIProxy Sample App");
+            Console.WriteLine("===================");
+            Console.WriteLine();
+        }
 
-            while (!exit)
+        private static void DisplaySubheader(string header)
+        {
+            Console.WriteLine(header);
+            Console.WriteLine("----------------");
+            Console.WriteLine();
+        }
+
+    private static void ShowMenu()
+        {
+            while (true)
             {
-                Console.Clear();
-                Console.WriteLine("DAIProxy Sample App");
-                Console.WriteLine("===================");
+                DisplayHeader();
+                Console.WriteLine($"Key:         {_key}");
                 Console.WriteLine();
-                menu.Display();
+                DisplaySubheader("Menu");
+                _mainMenu.Display();
             }
         }
 
-
-        private static void LoadKey()
+        private static void CreateMenu()
         {
-            
-            throw new NotImplementedException();
+            _mainMenu = new EasyConsole.Menu()
+                .Add("Generate random key", () => GenerateKey())
+                .Add("Enter key", () => SetKey())
+                .Add("Generate encrypted token", () => GenerateToken())
+                .Add("Decode encrypted token", () => DecodeToken())
+                .Add("Send Get request", () => SendRequest().Wait())
+                .Add("Exit", () => DoExit());
         }
 
-        private static void RunSigningSample()
+        private static void DisplayToken()
         {
-            var input = EasyConsole.Input.ReadString("Url to encrypt: ");
-            var key = "b14ca5898a4e4133bbce2ea2315a1916";
-            var data = CreateParametersString(DateTime.UtcNow, input, IPAddress.Parse("172.168.2.1"));
-            var encryptedString = AesOperation.EncryptString(key, data);
-            Console.WriteLine($"encrypted string = {encryptedString}");
-            var decryptedString = AesOperation.DecryptString(key, encryptedString);
-            Console.WriteLine($"decrypted string = {decryptedString}");
-//            var sampleString = Convert.ToBase64String(new byte[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39 });
-//            var decryptedSample = AesOperation.DecryptString(key, sampleString);
-//            Console.WriteLine($"decrypted sample = {decryptedSample}");
-//            var result = new ProxyRequestData(decryptedString);
-//            Console.WriteLine($"ValidUntil: {result.ValidUntil}");
-//            Console.WriteLine($"Url: {result.Url}");
-//            Console.WriteLine($"IP: {result.IP}");
-            Console.ReadKey();
+            Console.WriteLine("Token Details:");
+            Console.WriteLine($"    Valid Until: {_tokenData.ValidUntil:O}");
+            Console.WriteLine($"    Target URL:  {_tokenData.Url}");
+            Console.WriteLine($"    Source IP:   {_tokenData.IP}");
+            Console.WriteLine($"    Salted:      {_tokenData.Salted}");
+            Console.WriteLine($"    Debug Flag:  {_tokenData.Debug}");
+            Console.WriteLine($"    Encrypted Token:  {_token}");
+            Console.WriteLine();
+        }
+
+        private static void GenerateToken()
+        {
+            DisplayHeader();
+            DisplaySubheader("Generate Token");
+
+            var validseconds = EasyConsole.Input.ReadInt("Token validity in seconds (10-3000): ", 10, 3000);
+            var targeturl = EasyConsole.Input.ReadString("Target url: ");
+            var sourceIP = EasyConsole.Input.ReadString("Source IP (no syntax check): ");
+            var salted = EasyConsole.Input.ReadKeyYesOrNo("Add salt?");
+            Console.WriteLine();
+            var debug = EasyConsole.Input.ReadKeyYesOrNo("Add debug flag?");
+
+            _tokenData = new ProxyRequestData() { ValidUntil = DateTime.Now.AddSeconds(validseconds), Url = targeturl, IP = IPAddress.Parse(sourceIP), Debug = debug, Salted = salted };
+            _token = ProxyRequestDataEncoder.EncodeAndEncrypt(_tokenData, _key);
+
+            if (_tokenData != null)
+                DisplayToken();
+
+            ContinueWithEnter();
+        }
+
+        private static void DecodeToken()
+        {
+            DisplayHeader();
+            Console.WriteLine($"Key:         {_key}");
+            Console.WriteLine();
+            DisplaySubheader("Decode Token");
+            var token = EasyConsole.Input.ReadString("Encoded & Encrypted token:");
+            try
+            {
+                _tokenData = ProxyRequestDataDecoder.CreateFromEncodedAndEncrypted(token, _key);
+                _token = token;
+                Console.WriteLine();
+                DisplayToken();
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Decoding token failed: {ex.Message}");
+            }
+            ContinueWithEnter();
+        }
+
+        private static async Task SendRequest()
+        {
+            DisplayHeader();
+            DisplaySubheader("Send Request");
+            if (String.IsNullOrEmpty(_token))
+            {
+                Console.WriteLine("Token is empty");
+                ContinueWithEnter();
+                return;
+            }
+
+            DisplayToken();
+            Console.WriteLine("Sending ....");
+
+            var httpclient = new HttpClient();
+            var result = await httpclient.GetAsync("https://6bk90lpvbe.execute-api.eu-north-1.amazonaws.com/default/DAIProxyFunc?d=" + _token);
+
+            Console.WriteLine($"Sen result code: {result.StatusCode}");
+            ContinueWithEnter();
+        }
+
+        private static void ContinueWithEnter()
+        {
+            Console.WriteLine("Continue with <Enter>");
+            Console.ReadLine();
+        }
+
+        private static void DoExit()
+        {
+            Environment.Exit(0);
+        }
 
         private static void GenerateKey()
         {
+            DisplayHeader();
+            DisplaySubheader("Generate Key");
+            _key = RandomString(16, true);
+            Console.WriteLine($"New Key:     {_key}");
+            Console.WriteLine();
+            ContinueWithEnter();
         }
 
-        private static string CreateParametersString(DateTime time, string url, IPAddress ip)
+        private static void SetKey()
         {
-            var datestr = time.ToUniversalTime().ToString("O");
-            var encurl = System.Web.HttpUtility.UrlEncode(url);
-            var ipstr = ip.ToString();
-            return datestr + ";" + encurl + ";" + ipstr;
-        }
-
-        private static (DateTime time, string url, string ip) ParseParameterString(string data)
-        {
-            var parts = data.Split(";");
-            foreach (var item in parts)
+            bool keyok = false;
+            while(!keyok)
             {
-                Console.WriteLine($"Item : {item}");
-            }
-            if (parts.Count()==3)
-            {
-                var ts_ok = DateTime.TryParse(parts[0], out var time);
-                var url = System.Web.HttpUtility.UrlDecode(parts[1]);
-                var ip_ok = IPAddress.TryParse(parts[2], out var ip);
-                if (!ts_ok || !ip_ok)
-                    throw new Exception("parsing failed");
-
-                return (time, url, parts[2]);
-            }
-            throw new Exception("parsing failed");
-        }
-
-    }
-
-    public class AesOperation
-    {
-        public static string EncryptString(string key, string plainText)
-        {
-            byte[] iv = new byte[16];
-            byte[] array;
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = Encoding.UTF8.GetBytes(key);
-                aes.IV = iv;
-                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-                using (MemoryStream memoryStream = new MemoryStream())
+                DisplayHeader();
+                DisplaySubheader("Generate Key");
+                var key = EasyConsole.Input.ReadString("New key (16 characters): ");
+                keyok = key.Length == 16;
+                _key = keyok ? key : _key;
+                if (key.Length == 0)
                 {
-                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
-                    {
-                        using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
-                        {
-                            streamWriter.Write(plainText);
-                        }
-                        array = memoryStream.ToArray();
-                    }
+                    Console.WriteLine("Key not changed");
+                    break;
+                }
+                if (key.Length != 16)
+                {
+                    Console.WriteLine("invalid key length. 16 characters required (128 bit aes key)");
+                    ContinueWithEnter();
                 }
             }
-            return Convert.ToBase64String(array);
+            ContinueWithEnter();
         }
-        public static string DecryptString(string key, string cipherText)
+        private static string RandomString(int size, bool lowerCase)
         {
-            byte[] iv = new byte[16];
-            byte[] buffer = Convert.FromBase64String(cipherText);
-            using (Aes aes = Aes.Create())
+            StringBuilder builder = new StringBuilder();
+            Random random = new Random();
+            char ch;
+            for (int i = 0; i < size; i++)
             {
-                aes.Key = Encoding.UTF8.GetBytes(key);
-                aes.IV = iv;
-                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-                using (MemoryStream memoryStream = new MemoryStream(buffer))
-                {
-                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
-                        {
-                            return streamReader.ReadToEnd();
-                        }
-                    }
-                }
+                ch = Convert.ToChar(Convert.ToInt32(Math.Floor(26 * random.NextDouble() + 65)));
+                builder.Append(ch);
             }
+            if (lowerCase)
+                return builder.ToString().ToLower();
+            return builder.ToString();
         }
+
     }
 }
